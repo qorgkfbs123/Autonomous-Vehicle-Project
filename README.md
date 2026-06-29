@@ -1,188 +1,99 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>IoT Dashboard</title>
+📡 Arduino 센서 대시보드 (IoT Dashboard)
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
+Arduino에서 수집한 온도(Temperature)와 속도(Speed) 데이터를 실시간으로 모니터링할 수 있는 웹 기반 대시보드입니다.
 
-  <style>
-    body {
-      font-family: Arial;
-      background: #f4f6f8;
-      margin: 0;
-      padding: 20px;
-      text-align: center;
-    }
+📊 주요 기능
+🌡 실시간 온도 표시
+현재 측정된 온도를 카드 형태로 표시
+단위: ℃
+실시간으로 자동 갱신
+🚀 실시간 속도 표시
+현재 측정된 속도를 카드 형태로 표시
+단위: m/s
+실시간으로 자동 갱신
+🚗 차량 상태 표시
 
-    h1 { margin-bottom: 20px; }
+속도 값을 기준으로 현재 상태를 표시합니다.
 
-    .info-container {
-      display: flex;
-      justify-content: center;
-      gap: 30px;
-      flex-wrap: wrap;
-    }
+속도 = 0 m/s
+🚗🛑 정지
+속도 > 0 m/s
+🚗💨 주행 중
+📈 실시간 그래프
+🚀 속도 그래프
+시간에 따른 속도 변화를 선 그래프로 표시합니다.
+새로운 센서 데이터가 들어올 때마다 자동으로 업데이트됩니다.
+최근 60개의 데이터를 유지하여 실시간 변화를 확인할 수 있습니다.
+🌡 온도 그래프
+시간에 따른 온도 변화를 선 그래프로 표시합니다.
+실시간으로 데이터가 갱신됩니다.
+최근 60개의 데이터를 유지합니다.
+💾 데이터 저장 및 조회
 
-    .card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px 30px;
-      width: 260px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-    }
+페이지가 처음 열리면 데이터베이스(DB)에 저장된 최근 50개의 센서 데이터를 불러와 그래프를 초기화합니다.
 
-    .card-title { font-size: 20px; margin-bottom: 10px; color: #555; }
+불러오는 데이터
 
-    .value { font-size: 56px; font-weight: bold; }
+측정 시간(Timestamp)
+속도(Speed)
+온도(Temperature)
 
-    .temp { color: #e74c3c; }
-    .speed { color: #2980b9; }
+최신 데이터는 카드에도 함께 표시됩니다.
 
-    .status { margin-top: 15px; font-size: 26px; font-weight: bold; }
-    .stopped { color: #c0392b; }
-    .moving  { color: #27ae60; }
+🔄 실시간 데이터 수신
 
-    .charts {
-      max-width: 1100px;
-      margin: 30px auto;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 30px;
-    }
+Socket.IO를 이용하여 서버로부터 센서 데이터를 실시간으로 수신합니다.
 
-    .chart-box {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
-    }
+새로운 데이터가 도착하면 다음 항목이 자동으로 갱신됩니다.
 
-    canvas {
-      width: 100% !important;
-      height: 350px !important;
-    }
-  </style>
-</head>
-<body>
+현재 속도
+현재 온도
+차량 상태
+속도 그래프
+온도 그래프
 
-<h1>📡 Arduino Sensor Dashboard</h1>
+사용자가 새로고침하지 않아도 최신 센서 정보를 계속 확인할 수 있습니다.
 
-<div class="info-container">
+🎨 사용자 인터페이스(UI)
 
-  <div class="card">
-    <div class="card-title">🌡 Temperature</div>
-    <div class="value temp">
-      <span id="temp">--</span> °C
-    </div>
-  </div>
+대시보드는 다음과 같은 구성으로 제작되었습니다.
 
-  <div class="card">
-    <div class="card-title">🚀 Speed</div>
-    <div class="value speed">
-      <span id="speed">--</span> m/s
-    </div>
-    <div id="status" class="status stopped">🚗🛑 정지</div>
-  </div>
+온도 카드
+현재 온도를 큰 숫자로 표시
+속도 카드
+현재 속도를 큰 숫자로 표시
+상태 표시
+정지 또는 주행 중 여부를 아이콘과 함께 표시
+속도 그래프
+시간에 따른 속도 변화 시각화
+온도 그래프
+시간에 따른 온도 변화 시각화
+⚙ 사용 기술
+HTML5 : 웹 페이지 구성
+CSS3 : 반응형 UI 및 카드 디자인
+JavaScript (ES6) : 데이터 처리 및 실시간 업데이트
+Chart.js : 속도 및 온도 그래프 시각화
+Socket.IO : 실시간 센서 데이터 통신
+REST API : 저장된 센서 데이터 조회
+Database(DB) : 센서 데이터 저장 및 관리
 
-</div>
+📌 동작 흐름
 
-<div class="charts">
-
-  <div class="chart-box">
-    <h2>🚀 Speed (m/s)</h2>
-    <canvas id="speedChart"></canvas>
-  </div>
-
-  <div class="chart-box">
-    <h2>🌡 Temperature (°C)</h2>
-    <canvas id="tempChart"></canvas>
-  </div>
-
-</div>
-
-<script>
-  const socket = io();
-
-  const labels = [];
-  const speedData = [];
-  const tempData = [];
-
-  const speedChart = new Chart(document.getElementById('speedChart'), {
-    type: 'line',
-    data: { labels, datasets: [{ label: 'Speed (m/s)', data: speedData, borderWidth: 3, tension: 0.3 }] },
-    options: { animation: false, scales: { y: { beginAtZero: true } } }
-  });
-
-  const tempChart = new Chart(document.getElementById('tempChart'), {
-    type: 'line',
-    data: { labels, datasets: [{
-      label: 'Temperature (°C)',
-      data: tempData,
-      borderColor: '#e74c3c',
-      backgroundColor: 'rgba(231,76,60,0.15)',
-      borderWidth: 3,
-      tension: 0.3
-    }]},
-    options: { animation: false, scales: { y: { beginAtZero: false } } }
-  });
-
-  // 🔹 DB에서 초기 데이터 불러오기
-  async function loadHistory() {
-    const res = await fetch('/api/history?limit=50');
-    const history = await res.json();
-
-    history.forEach(item => {
-      const time = new Date(item.timestamp).toLocaleTimeString();
-      labels.push(time);
-      speedData.push(item.speed);
-      tempData.push(item.temperature);
-    });
-
-    speedChart.update();
-    tempChart.update();
-
-    // 최신 값 카드에도 표시
-    if (history.length > 0) {
-      const last = history[history.length - 1];
-      updateCards(last.speed, last.temperature);
-    }
-  }
-
-  function updateCards(speed, temp) {
-    document.getElementById('speed').innerText = speed.toFixed(3);
-    document.getElementById('temp').innerText = temp.toFixed(2);
-
-    const status = document.getElementById('status');
-    if (speed === 0) {
-      status.innerText = "🚗🛑 정지";
-      status.className = "status stopped";
-    } else {
-      status.innerText = "🚗💨 주행 중";
-      status.className = "status moving";
-    }
-  }
-
-  // 🔹 실시간 데이터 반영
-  socket.on('sensor-data', (data) => {
-    updateCards(data.speed, data.temperature);
-
-    const time = new Date().toLocaleTimeString();
-    labels.push(time);
-    speedData.push(data.speed);
-    tempData.push(data.temperature);
-
-    if (labels.length > 60) {
-      labels.shift(); speedData.shift(); tempData.shift();
-    }
-
-    speedChart.update();
-    tempChart.update();
-  });
-
-  loadHistory(); // 페이지 로드 시 초기 DB 데이터 불러오기
-</script>
-
-</body>
-</html>
+Arduino 센서
+      │
+      ▼
+Node.js 서버
+      │
+      ├── 데이터베이스(DB)에 저장
+      │
+      ├── REST API로 과거 데이터 제공
+      │
+      └── Socket.IO로 실시간 데이터 전송
+                    │
+                    ▼
+           IoT Dashboard
+     ├── 현재 속도 표시
+     ├── 현재 온도 표시
+     ├── 차량 상태 표시
+     ├── 속도 그래프 갱신
+     └── 온도 그래프 갱신
